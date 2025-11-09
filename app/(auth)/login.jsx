@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
-import { Link, router } from "expo-router";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import { router } from "expo-router";
+import { auth, db } from "../../firebase";
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithCredential,
 } from "firebase/auth";
-import { auth, db } from "../../firebase";
-import { setDoc, doc, getDoc } from "firebase/firestore"; 
+import { setDoc, doc, getDoc } from "firebase/firestore";
+
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const PINK_DARK = "#e94f8c";
 const PINK_LIGHT = "#ffe0ec";
@@ -18,21 +22,37 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: "859199550263-bcirlrrdlgi1q46bt72sicdib2qlkm4t.apps.googleusercontent.com",
+    expoClientId: "859199550263-bcirlrrdlgi1q46bt72sicdib2qlkm4t.apps.googleusercontent.com",
+    iosClientId: "859199550263-bcirlrrdlgi1q46bt72sicdib2qlkm4t.apps.googleusercontent.com",
+    androidClientId: "859199550263-bcirlrrdlgi1q46bt72sicdib2qlkm4t.apps.googleusercontent.com",
+    redirectUri: "https://auth.expo.io/@elsak/Myapp", 
+  });
 
   useEffect(() => {
-    getRedirectResult(auth)
-      .then(async (result) => {
-        console.log(" Redirect result:", result);
+    const handleGoogleResponse = async () => {
+      if (response?.type === "success") {
+        const { authentication } = response;
 
-        if (result?.user) {
+        const credential = GoogleAuthProvider.credential(
+          null,
+          authentication.accessToken
+        );
+
+        try {
+          const result = await signInWithCredential(auth, credential);
+
           const user = result.user;
-          console.log("User logged in:", user.email);
+
 
           const ref = doc(db, "users", user.uid);
           const snapshot = await getDoc(ref);
 
           if (!snapshot.exists()) {
-            console.log("Creating new user in Firestore...");
+          
             await setDoc(ref, {
               uid: user.uid,
               email: user.email,
@@ -41,35 +61,37 @@ export default function Login() {
               provider: "google",
               createdAt: new Date(),
             });
+            console.log(" User added to Firestore");
           } else {
-            console.log(" User already exists in Firestore.");
+            console.log("ℹ User already exists in Firestore");
           }
 
-          router.replace("/");
+          router.push("/home");
+        } catch (err) {
+          console.error(" Google Sign-In Error:", err.message);
+          setError(err.message);
         }
-      })
-      .catch((err) => {
-        console.error(" Google Redirect Error:", err.message);
-      });
-  }, []);
+      }
+    };
+
+    handleGoogleResponse();
+  }, [response]);
 
   const handleEmailLogin = async () => {
+    if (!email || !password) {
+      setError("Please fill in both fields.");
+      return;
+    }
+
+    setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/");
+      router.push("/home");
     } catch (e) {
-      setError(e.message);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" }); 
-      await signInWithRedirect(auth, provider);
-    } catch (e) {
-      setError(e.message);
-      console.error(" Google Sign-In Error:", e.message);
+      setError("Invalid email or password.");
+      console.error("Email login error:", e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,16 +117,30 @@ export default function Login() {
 
         {!!error && <Text style={styles.error}>{error}</Text>}
 
-        <Pressable onPress={handleEmailLogin} style={styles.btn}>
-          <Text style={styles.btnText}>Login</Text>
-        </Pressable>
+        <TouchableOpacity onPress={handleEmailLogin} style={styles.btn}>
+          <Text style={styles.btnText}>
+            {loading ? "Logging in..." : "Login"}
+          </Text>
+        </TouchableOpacity>
 
-        <Pressable onPress={handleGoogleLogin} style={[styles.btn, styles.googleBtn]}>
-          <Text style={[styles.btnText, { color: PINK_DARK }]}>Sign in with Google</Text>
-        </Pressable>
+        <TouchableOpacity
+          style={[styles.btn, styles.googleBtn]}
+          onPress={() => promptAsync()}
+          disabled={!request}
+        >
+          <Text style={[styles.btnText, { color: PINK_DARK }]}>
+            Continue with Google
+          </Text>
+        </TouchableOpacity>
 
         <Text style={styles.footer}>
-          Don’t have an account? <Link href="/(auth)/register">Register</Link>
+          Don’t have an account?{" "}
+          <Text
+            onPress={() => router.push("/(auth)/register")}
+            style={{ color: PINK_DARK, fontWeight: "600" }}
+          >
+            Register
+          </Text>
         </Text>
       </View>
     </View>
