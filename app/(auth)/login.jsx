@@ -7,7 +7,8 @@ import {
   signInWithRedirect,
   getRedirectResult,
 } from "firebase/auth";
-import { auth } from "../../firebase";
+import { auth, db } from "../../firebase";
+import { setDoc, doc, getDoc } from "firebase/firestore"; 
 
 const PINK_DARK = "#e94f8c";
 const PINK_LIGHT = "#ffe0ec";
@@ -18,15 +19,38 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // Kur Firebase kthen user-in pas redirect
   useEffect(() => {
     getRedirectResult(auth)
-      .then((result) => {
+      .then(async (result) => {
+        console.log(" Redirect result:", result);
+
         if (result?.user) {
+          const user = result.user;
+          console.log("User logged in:", user.email);
+
+          const ref = doc(db, "users", user.uid);
+          const snapshot = await getDoc(ref);
+
+          if (!snapshot.exists()) {
+            console.log("Creating new user in Firestore...");
+            await setDoc(ref, {
+              uid: user.uid,
+              email: user.email,
+              name: user.displayName || "",
+              photo: user.photoURL || "",
+              provider: "google",
+              createdAt: new Date(),
+            });
+          } else {
+            console.log(" User already exists in Firestore.");
+          }
+
           router.replace("/");
         }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        console.error(" Google Redirect Error:", err.message);
+      });
   }, []);
 
   const handleEmailLogin = async () => {
@@ -41,9 +65,11 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" }); 
       await signInWithRedirect(auth, provider);
     } catch (e) {
       setError(e.message);
+      console.error(" Google Sign-In Error:", e.message);
     }
   };
 
@@ -88,7 +114,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: PINK_LIGHT, justifyContent: "center", padding: 24 },
   card: { backgroundColor: "white", borderRadius: 20, padding: 20, elevation: 3 },
-  title: { fontSize: 24, fontWeight: "800", color: PINK_DARK, marginBottom: 10 },
+  title: { fontSize: 24, fontWeight: "800", color: PINK_DARK, marginBottom: 10, textAlign: "center" },
   input: {
     borderWidth: 1,
     borderColor: "#f3c1d6",
