@@ -41,24 +41,24 @@ npm install
 - Enable Email/Password and Google under Authentication → Sign-in Method
 - Copy your Firebase config and paste it into firebase.js
 
-// firebase.js
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+    // firebase.js
+    import { initializeApp } from "firebase/app";
+    import { getAuth } from "firebase/auth";
+    import { getFirestore } from "firebase/firestore";
 
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
-};
+    const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID",
+    };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export default app;
+    const app = initializeApp(firebaseConfig);
+    export const auth = getAuth(app);
+    export const db = getFirestore(app);
+    export default app;
 
 4. Set up Google Cloud OAuth Client
    Go to Google Cloud Console
@@ -78,16 +78,27 @@ npx expo start --web
 
 ## 📂 Folder Structure
 firebase-google-auth/
+
 │
+
 ├── app/
+
 │   ├── (auth)/
+
 │   │   ├── login.jsx        # Email + Google login screen
+
 │   │   ├── register.jsx     # User registration form
+
 │   ├── index.jsx            # Welcome screen (after login)
+
 │   └── _layout.jsx          # Navigation setup
+
 │
+
 ├── firebase.js              # Firebase config (Auth + Firestore)
+
 ├── package.json
+
 └── README.md
 
 ## Example Screens
