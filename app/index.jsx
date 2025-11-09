@@ -50,14 +50,17 @@ export default function Home() {
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
-        {/* 🖼️ FOTO E MIRESEARDHJES */}
+
         <Image
           source={require("../assets/images/welcome.png")}
           style={{ width: 220, height: 220, marginBottom: 20 }}
           resizeMode="contain"
         />
 
-        <Text style={styles.title}>Welcome dear 💖</Text>
+        <Text style={styles.title}>
+        Welcome {user?.displayName ? user.displayName.split(" ")[0] : "dear"} 💖
+        </Text>
+
         <Text style={styles.subtitle}>
           {user?.displayName ? user.displayName : user?.email}
         </Text>

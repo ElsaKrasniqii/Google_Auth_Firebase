@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { router } from "expo-router";
 import { auth, db } from "../../firebase";
 import {
   signInWithEmailAndPassword,
+  signInWithPopup,
   GoogleAuthProvider,
   signInWithCredential,
 } from "firebase/auth";
@@ -11,6 +12,7 @@ import { setDoc, doc, getDoc } from "firebase/firestore";
 
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
+import * as AuthSession from "expo-auth-session";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -24,27 +26,24 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const provider = new GoogleAuthProvider();
+
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: "859199550263-bcirlrrdlgi1q46bt72sicdib2qlkm4t.apps.googleusercontent.com",
     expoClientId: "859199550263-bcirlrrdlgi1q46bt72sicdib2qlkm4t.apps.googleusercontent.com",
-    iosClientId: "859199550263-bcirlrrdlgi1q46bt72sicdib2qlkm4t.apps.googleusercontent.com",
-    androidClientId: "859199550263-bcirlrrdlgi1q46bt72sicdib2qlkm4t.apps.googleusercontent.com",
-    redirectUri: "https://auth.expo.io/@elsak/Myapp", 
+    redirectUri: AuthSession.makeRedirectUri({ useProxy: true }),
   });
 
   useEffect(() => {
     const handleGoogleResponse = async () => {
-      if (response?.type === "success") {
+      if (response?.type === "success" && Platform.OS !== "web") {
         const { authentication } = response;
-
-        const credential = GoogleAuthProvider.credential(
-          null,
-          authentication.accessToken
-        );
+        const credential = GoogleAuthProvider.credential(null, authentication.accessToken);
 
         try {
+         
           const result = await signInWithCredential(auth, credential);
-
+         
           const user = result.user;
 
 
@@ -60,15 +59,13 @@ export default function Login() {
               photo: user.photoURL || "",
               provider: "google",
               createdAt: new Date(),
-            });
-            console.log(" User added to Firestore");
-          } else {
-            console.log("ℹ User already exists in Firestore");
+          
+        });
           }
 
-          router.push("/home");
+          router.push("/");
         } catch (err) {
-          console.error(" Google Sign-In Error:", err.message);
+          console.error("Google Sign-In Error:", err.message);
           setError(err.message);
         }
       }
@@ -86,12 +83,38 @@ export default function Login() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/home");
+      router.push("/");
     } catch (e) {
       setError("Invalid email or password.");
       console.error("Email login error:", e.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleWebLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const ref = doc(db, "users", user.uid);
+      const snapshot = await getDoc(ref);
+
+      if (!snapshot.exists()) {
+        await setDoc(ref, {
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || "",
+          photo: user.photoURL || "",
+          provider: "google",
+          createdAt: new Date(),
+        });
+      }
+
+      router.push("/");
+    } catch (err) {
+      console.error("Google Web Sign-In Error:", err.message);
+      setError(err.message);
     }
   };
 
@@ -125,8 +148,9 @@ export default function Login() {
 
         <TouchableOpacity
           style={[styles.btn, styles.googleBtn]}
-          onPress={() => promptAsync()}
-          disabled={!request}
+          onPress={() =>
+            Platform.OS === "web" ? handleGoogleWebLogin() : promptAsync()
+          }
         >
           <Text style={[styles.btnText, { color: PINK_DARK }]}>
             Continue with Google
