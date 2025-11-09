@@ -79,17 +79,17 @@ npx expo start --web
 ## 📂 Folder Structure
 firebase-google-auth/
 
-│
-├── app/
-│   ├── (auth)/
-│   │   ├── login.jsx        # Email + Google login screen
-│   │   ├── register.jsx     # User registration form
-│   ├── index.jsx            # Welcome screen (after login)
-│   └── _layout.jsx          # Navigation setup
-│
-├── firebase.js              # Firebase config (Auth + Firestore)
-├── package.json
-└── README.md
+│                     
+├── app/                                     
+│   ├── (auth)/                                                  
+│   │   ├── login.jsx        # Email + Google login screen                 
+│   │   ├── register.jsx     # User registration form                   
+│   ├── index.jsx            # Welcome screen (after login)                  
+│   └── _layout.jsx          # Navigation setup                  
+│                                                                        
+├── firebase.js              # Firebase config (Auth + Firestore)                
+├── package.json               
+└── README.md                                    
 
 ## Example Screens
 ### 🔸 Login
