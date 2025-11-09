@@ -73,32 +73,22 @@ npm install
 
  - Copy your webClientId and paste it inside login.jsx in the Google Auth config.
 
-5️⃣ Run the app in web mode
+5.  Run the app in web mode
 npx expo start --web
 
 ## 📂 Folder Structure
 firebase-google-auth/
 
 │
-
 ├── app/
-
 │   ├── (auth)/
-
 │   │   ├── login.jsx        # Email + Google login screen
-
 │   │   ├── register.jsx     # User registration form
-
 │   ├── index.jsx            # Welcome screen (after login)
-
 │   └── _layout.jsx          # Navigation setup
-
 │
-
 ├── firebase.js              # Firebase config (Auth + Firestore)
-
 ├── package.json
-
 └── README.md
 
 ## Example Screens
